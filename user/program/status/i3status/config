@@ -1,0 +1,91 @@
+# i3status configuration file.
+# see "man i3status" for documentation.
+
+# It is important that this file is edited as UTF-8.
+# The following line should contain a sharp s:
+# ß
+# If the above line is not correctly displayed, fix your editor first!
+
+general {
+    colors = false
+    interval = 2
+}
+
+order += "disk /"
+order += "disk /home"
+order += "wireless _first_"
+order += "ethernet enp0s25"
+order += "ethernet enp0s26u1u2"
+order += "cpu_usage"
+order += "battery 0"
+order += "volume master"
+order += "tztime local"
+
+wireless _first_ {
+    format_up = "(%quality at %essid, %bitrate) %ip"
+    format_down = ""
+    align = center
+    min_width = 140
+}
+
+ethernet enp0s25 {
+    # if you use %speed, i3status requires root privileges
+    format_up = "E: %ip (%speed)"
+    format_down = ""
+    align = center
+    min_width = 100
+}
+
+ethernet enp0s26u1u2 {
+    # if you use %speed, i3status requires root privileges
+    format_up = "E: %ip (%speed)"
+    format_down = ""
+    align = center
+    min_width = 100
+}
+
+battery 0 {
+    hide_seconds = true
+    last_full_capacity = true
+    integer_battery_capacity = true
+    status_chr = "chr"
+    status_bat = "bat "
+    status_full = "full"
+    format_down = "no bat"
+    format = "%status%percentage"
+    align = center
+    min_width = 40
+}
+
+tztime local {
+    format = "%Y-%m-%d %H:%M"
+    align = center
+    min_width = 110
+}
+
+cpu_usage {
+    format = "cpu: %usage"
+    align = center
+    min_width = 50
+}
+
+volume master {
+    format = "vol: %volume"
+    format_muted = "muted"
+    device = "default"
+    mixer = "Master"
+    align = center
+    min_width = 40
+}
+
+disk "/" {
+    format = "/ %avail"
+    align = center
+    min_width = 75
+}
+
+disk "/home" {
+    format = "/home %avail"
+    align = center
+    min_width = 75
+}
