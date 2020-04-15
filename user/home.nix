@@ -5,6 +5,7 @@
 
   imports = [
     ./role/wayland/sway.nix
+    #./role/x11/i3.nix
     ./module/editor/vim/setup.nix
     ./module/shell/zsh/zsh.nix
     ./module/terminal/alacritty/settings.nix
@@ -17,10 +18,12 @@
   };
 
   home.packages = with pkgs; [
+    vscode
+    zathura
     git htop unzip dash
     xdg_utils
-    #libvirt pkgs.vagrant docker-compose
-    # vis dvtm abduco #as Vim and Tmux alternative
+    libvirt pkgs.vagrant docker-compose
+    vis dvtm abduco #as Vim and Tmux alternative
   ];
 
   # See all available envs here: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
