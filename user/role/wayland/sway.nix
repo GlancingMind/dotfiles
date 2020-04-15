@@ -9,6 +9,7 @@ in
   nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
+    wl-clipboard
     qt5.qtwayland
     source-code-pro
   ];
@@ -19,23 +20,27 @@ in
     package = pkgs.firefox-wayland;
   };
 
+
   xdg.configFile."i3status".source = ../../program/status/i3status;
+
+  home.sessionVariables = {
+    TERM = "alacritty";
+    BROWSER = "firefox";
+
+    # enable wayland support for firefox
+    MOZ_ENABLE_WAYLAND = "1";
+
+    # needs qt5.qtwayland in systemPackages
+    QT_QPA_PLATFORM = "wayland";
+    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+
+    _JAVA_OPTIONS = "-Dawt.useSystemAAFontSettings=lcd_hrgb";
+    _JAVA_AWT_WM_NONREPARENTING = "1";
+  };
 
   wayland.windowManager.sway = {
     enable = true;
     xwayland = false;
-    extraSessionCommands = ''#
-      export TERM=alacritty
-      export BROWSER=firefox
-      #
-      # enable wayland support for firefox
-        export MOZ_ENABLE_WAYLAND=1
-      #
-      # needs qt5.qtwayland in systemPackages
-        export QT_QPA_PLATFORM=wayland
-        export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
-      export _JAVA_OPTIONS=-Dawt.useSystemAAFontSettings=lcd_hrgb
-      export _JAVA_AWT_WM_NONREPARENTING=1'';
     config = {
       modifier = "Mod4";
       terminal = "${pkgs.alacritty}/bin/alacritty";
