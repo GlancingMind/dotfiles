@@ -15,7 +15,6 @@
 
   networking.wireless.iwd.enable = true;
   systemd.network.enable = true;
-  systemd.network.networks."99-main".enable = false;
   systemd.network.networks."25-wireless" = {
     name = "wlan0";
     DHCP = "yes";
@@ -23,13 +22,13 @@
       IPv6PrivacyExtensions = "yes";
     };
   };
-  systemd.network.networks."20-wired" = {
-    name = "en*";
-    DHCP = "yes";
-    networkConfig = {
-      IPv6PrivacyExtensions = "yes";
-    };
-  };
+  #systemd.network.networks."20-wired" = {
+  #  name = "en*";
+  #  DHCP = "yes";
+  #  networkConfig = {
+  #    IPv6PrivacyExtensions = "yes";
+  #  };
+  #};
 
   systemd.services.iwd-config = {
     enable = true;

@@ -9,7 +9,6 @@ in
   nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
-    wl-clipboard
     qt5.qtwayland
     source-code-pro
   ];
@@ -19,7 +18,6 @@ in
   programs.firefox = lib.attrsets.recursiveUpdate (import ../../program/browser/web/firefox/firefox.nix) {
     package = pkgs.firefox-wayland;
   };
-
 
   xdg.configFile."i3status".source = ../../program/status/i3status;
 
@@ -40,7 +38,7 @@ in
 
   wayland.windowManager.sway = {
     enable = true;
-    xwayland = false;
+    xwayland = true;
     config = {
       modifier = "Mod4";
       terminal = "${pkgs.alacritty}/bin/alacritty";

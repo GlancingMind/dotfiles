@@ -17,6 +17,6 @@ mount /dev/disk/by-label/boot /mnt/boot
 mount /dev/disk/by-label/home /mnt/home
 
 nixos-generate-config --root /mnt
-cp machine/base/configuration.nix /mnt/etc/nixos
-cp machine/base/systemd-networkd.nix /mnt/etc/nixos
+cp configuration.nix /mnt/etc/nixos
+cp systemd-networkd.nix /mnt/etc/nixos
 nixos-install --root /mnt

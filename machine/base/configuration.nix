@@ -20,11 +20,8 @@
   boot.loader.systemd-boot.editor = false;
 
   # Select internationalisation properties.
-  i18n = {
-    consoleFont = "Lat2-Terminus16";
-    consoleKeyMap = "de";
-    defaultLocale = "de_DE.UTF-8";
-  };
+  console.font = "Lat2-Terminus16";
+  console.keyMap = "de";
 
   # Set your time zone.
   time.timeZone = "Europe/Berlin";
@@ -33,5 +30,5 @@
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "19.09"; # Did you read the comment?
+  system.stateVersion = "20.03"; # Did you read the comment?
 }
