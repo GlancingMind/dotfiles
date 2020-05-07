@@ -10,8 +10,13 @@ let
 in
 {
   home.packages = with pkgs; [
-    git # required for vim-plug
+     # required for vim-plug
+     #git
   ];
+
+  # required for vim-plug
+  programs.git.enable = true;
+  programs.git.package = pkgs.gitMinimal;
 
   xdg.configFile."vim" = {
     source = ./config;

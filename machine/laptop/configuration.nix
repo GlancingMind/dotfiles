@@ -8,6 +8,7 @@
     ../role/systemd-networkd.nix
     ../role/sound.nix
     ../role/virtualization.nix
+    ../role/user.nix
   ];
 
   networking.firewall.allowedTCPPorts = [ 22 ];
@@ -26,11 +27,6 @@
   fonts.enableDefaultFonts = true;
 
   # Select internationalisation properties.
-  #i18n = {
-  #  consoleFont = "Lat2-Terminus16";
-  #  consoleKeyMap = "de";
-  #  defaultLocale = "de_DE.UTF-8";
-  #};
   console.font = "Lat2-Terminus16";
   console.keyMap = "de";
 
@@ -39,35 +35,15 @@
 
 
   # Enable CUPS to print documents.
-  services.printing.enable = true;
+  #services.printing.enable = true;
 
   hardware.cpu.intel.updateMicrocode = true;
 
   services.fstrim.enable = true;
 
-  let
-    home-manager = builtins.fetchGit {
-      url = "https://github.com/rycee/home-manager.git";
-      ref = system.stateVersion;
-    };
-    username = "sascha";
-  in
-  {
-    import = [(import "${home-manager}/nixos")];
-    home-manager.users."${username}" = import ../../../user/home.nix
-
-    # Define a user account. Don't forget to set a password with ‘passwd’.
-    users.users."${username}" = {
-      isNormalUser = true;
-      extraGroups = [ "video" "wheel" "docker" "libvirtd" ];
-      shell = pkgs.zsh;
-    };
-  }
-
-
   # This value determines the NixOS release with which your system is to be
   # compatible, in order to avoid breaking some software such as database
   # servers. You should change this only after NixOS release notes say you
   # should.
-  system.stateVersion = "19.09"; # Did you read the comment?
+  system.stateVersion = "20.03"; # Did you read the comment?
 }
