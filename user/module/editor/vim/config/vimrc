@@ -49,6 +49,7 @@ call minpac#add('wikitopian/hardmode')
 call minpac#add('sgur/vim-editorconfig')
 call minpac#add('vim-scripts/Ada-Bundle')
 call minpac#add('LnL7/vim-nix')
+call minpac#add('FrigoEU/psc-ide-vim')
 
 command! PackUpdate call minpac#update()
 command! PackStatus call minpac#status()
