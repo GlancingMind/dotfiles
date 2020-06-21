@@ -2,18 +2,11 @@
 
 BACKUP_DIR = $(HOME)/backup
 
-home:
-	home-manager switch
-
-setup-home-manager: $(HOME)/.config/nixpkgs
-	-mkdir -p $(HOME)/.config
-	-ln -s -n $(PWD)/nix-channels $(HOME)/.nix-channels
-	-ln -s -n $(PWD)/user $(HOME)/.config/nixpkgs
-	#-nix-channel --update
-	nix-shell '<home-manager>' -A install
+home: user/home.nix
+	nix-shell --command "home-manager -f $? switch"
 
 update-machine-config: machine/laptop/deployment.nix
-	nix-shell --run 'nixops modify -d laptop machine/laptop/deployment.nix'
+	nix-shell --run 'nixops modify -d laptop $?'
 	nix-shell --run 'nixops deploy -d laptop'
 
 setup-machine-config: machine/laptop/deployment.nix
