@@ -3,7 +3,7 @@
 BACKUP_DIR = $(HOME)/backup
 
 home: user/home.nix
-	nix-shell --command "home-manager -f $? switch"
+	nix-shell --run "home-manager -f $? switch"
 
 update-machine-config: machine/laptop/deployment.nix
 	nix-shell --run 'nixops modify -d laptop $?'
