@@ -28,13 +28,15 @@
   };
 
   home.packages = with pkgs; [
-    zathura htop unzip dash
+    htop unzip dash
     xdg_utils
     #gitAndTools.git-bug
     libvirt pkgs.vagrant docker-compose
     vis dvtm abduco #as Vim and Tmux alternative
-    vscodium
+    zathura
     chromium
+    #vscodium
+    #vscode
   ];
 
 #  programs.git.enable = true;

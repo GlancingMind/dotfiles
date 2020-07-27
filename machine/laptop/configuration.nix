@@ -9,6 +9,7 @@
     ../role/sound.nix
     ../role/virtualization.nix
     ../role/user.nix
+#    ../role/kubernetes.nix
   ];
 
   networking.firewall.allowedTCPPorts = [ 22 ];
@@ -23,6 +24,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.editor = false;
+  boot.loader.timeout = 0;
 
   fonts.enableDefaultFonts = true;
 
