@@ -30,9 +30,3 @@
 ## Track new nixpkgs branch
 
    $ nix-shell --run "niv update nixpkgs -b nixos-19.09"
-
-TODO
-
-- define Backup target in Makefile
-- create symlink from dmenu to bemenu, so passmenu will work under wayland
-    e.g. https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=bemenu-dmenu

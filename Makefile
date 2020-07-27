@@ -20,3 +20,5 @@ backup: $(HOME)/.ssh $(HOME)/.gnupg $(HOME)/.mozilla \
 	mkdir -p $(BACKUP_DIR)
 	cp -r $? $(BACKUP_DIR)
 
+collect-garbage:
+	nix-collect-garbage --delete-old
