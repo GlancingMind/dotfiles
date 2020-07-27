@@ -7,7 +7,7 @@
     $ wpa_passphrase 'SSID' 'KEY' > passphrase.txt
     $ wpa_supplicant -B -i <interface> -c passphrase.txt # Interface could be wlp3s0
     ```
-2. Call install.sh in machine/base to partitioning disk
+2. Call install.sh in machine/base to partition disk
 3. Copy this installation information over to root directory.
 4. Reboot and login to root
 5. reconnect to network like in step 1.
