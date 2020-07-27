@@ -1,4 +1,5 @@
-{ config, pkgs, ... }:
+{ config, pkgs, stdenv, ... }:
+
 let
   minpac = pkgs.vimUtils.buildVimPlugin {
     name = "minpac";
@@ -9,12 +10,12 @@ let
   };
 in
 {
-  home.packages = with pkgs; [
-     # required for vim-plug
-     #git
+  home.packages = [
+    #required by CoC
+    pkgs.nodejs
   ];
 
-  # required for vim-plug
+  # required for vim-minpac
   programs.git.enable = true;
   programs.git.package = pkgs.gitMinimal;
 

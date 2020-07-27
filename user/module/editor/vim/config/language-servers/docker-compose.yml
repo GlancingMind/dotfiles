@@ -1,0 +1,8 @@
+version: "3"
+services:
+  reasonml-ls:
+    build:
+      context: .
+      dockerfile: reasonml.Dockerfile
+      #volumes:
+      #  - ./client:/app

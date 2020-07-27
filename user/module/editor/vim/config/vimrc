@@ -50,25 +50,23 @@ call minpac#add('sgur/vim-editorconfig')
 call minpac#add('vim-scripts/Ada-Bundle')
 call minpac#add('LnL7/vim-nix')
 call minpac#add('FrigoEU/psc-ide-vim')
+call minpac#add('purescript-contrib/purescript-vim')
+call minpac#add('reasonml-editor/vim-reason-plus')
+call minpac#add('prabirshrestha/vim-lsp')
 
 command! PackUpdate call minpac#update()
 command! PackStatus call minpac#status()
 command! PackClean call minpac#clean()
 
-"use vim plug for plugin managment
-"call plug#begin()
-"Plug '~/workspace/personal/vim-configer/'
-"Plug 'UnintendedSideEffect/vim-baker'
-"Plug 'vim-erlang/vim-erlang-omnicomplete'
-"Plug 'vim-erlang/vim-erlang-runtime'
-"Plug 'tpope/vim-fugitive'
-"Plug 'tpope/vim-surround'
-"Plug 'morhetz/gruvbox'
-"Plug 'vimwiki/vimwiki'
-"Plug 'wikitopian/hardmode'
-"Plug 'sgur/vim-editorconfig'
-"Plug 'vim-scripts/Ada-Bundle'
-"call plug#end()
+"TODO If the language server runs inside a docker container, the project must
+"be mapped inside the container.
+let s:lsp_compose_cmd = 'docker-compose run -f ./language-servers/docker-compose.yml '
+au User lsp_setup call lsp#register_server({
+        \ 'name': 'reasonml-ls',
+        \ 'cmd': {server_info->[&shell, &shellcmdflag, s:lsp_compose_cmd + 'reasonml-ls']},
+        \ 'allowlist': ['reason'],
+        \ })
+
 
 let g:EditorConfig_exclude_patterns = ['fugitive://.*']
 let g:Baker_CompleteDirectories = 0
