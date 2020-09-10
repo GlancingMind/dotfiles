@@ -45,28 +45,53 @@ call minpac#add('tpope/vim-fugitive')
 call minpac#add('tpope/vim-surround')
 call minpac#add('morhetz/gruvbox')
 call minpac#add('vimwiki/vimwiki')
+call minpac#add('zyedidia/literate.vim')
 call minpac#add('wikitopian/hardmode')
 call minpac#add('sgur/vim-editorconfig')
+call minpac#add('mattn/emmet-vim')
 call minpac#add('vim-scripts/Ada-Bundle')
 call minpac#add('LnL7/vim-nix')
 call minpac#add('FrigoEU/psc-ide-vim')
 call minpac#add('purescript-contrib/purescript-vim')
 call minpac#add('reasonml-editor/vim-reason-plus')
+
 call minpac#add('prabirshrestha/vim-lsp')
+call minpac#add('prabirshrestha/asyncomplete.vim')
+call minpac#add('prabirshrestha/asyncomplete-lsp.vim')
 
 command! PackUpdate call minpac#update()
 command! PackStatus call minpac#status()
 command! PackClean call minpac#clean()
 
-"TODO If the language server runs inside a docker container, the project must
-"be mapped inside the container.
-let s:lsp_compose_cmd = 'docker-compose run -f ./language-servers/docker-compose.yml '
-au User lsp_setup call lsp#register_server({
-        \ 'name': 'reasonml-ls',
-        \ 'cmd': {server_info->[&shell, &shellcmdflag, s:lsp_compose_cmd + 'reasonml-ls']},
-        \ 'allowlist': ['reason'],
-        \ })
+function! s:on_lsp_buffer_enabled() abort
+    setlocal omnifunc=lsp#complete
+    setlocal signcolumn=yes
+    if exists('+tagfunc') | setlocal tagfunc=lsp#tagfunc | endif
+    nmap <buffer> gd <plug>(lsp-definition)
+    nmap <buffer> gr <plug>(lsp-references)
+    nmap <buffer> gi <plug>(lsp-implementation)
+    nmap <buffer> gt <plug>(lsp-type-definition)
+    nmap <buffer> <leader>rn <plug>(lsp-rename)
+    nmap <buffer> [g <Plug>(lsp-previous-diagnostic)
+    nmap <buffer> ]g <Plug>(lsp-next-diagnostic)
+    nmap <buffer> K <plug>(lsp-hover)
 
+    " refer to doc to add more commands
+endfunction
+
+augroup lsp_install
+    au!
+    " call s:on_lsp_buffer_enabled only for languages that has the server registered.
+    autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
+augroup END
+
+"if executable('reason-language-server')
+   au User lsp_setup call lsp#register_server({
+           \ 'name': 'reasonml-ls',
+           \ 'cmd': {server_info->[&shell, &shellcmdflag, '/nix/store/bibqckvyw73rhhc9rv70kanbw8fh6w6l-reason-language-server-1.7.11/bin/reason-language-server']},
+           \ 'allowlist': ['reason'],
+           \ })
+"endif
 
 let g:EditorConfig_exclude_patterns = ['fugitive://.*']
 let g:Baker_CompleteDirectories = 0

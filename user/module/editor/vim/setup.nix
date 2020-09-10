@@ -11,8 +11,6 @@ let
 in
 {
   home.packages = [
-    #required by CoC
-    pkgs.nodejs
   ];
 
   # required for vim-minpac
