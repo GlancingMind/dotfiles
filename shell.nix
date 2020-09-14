@@ -13,7 +13,7 @@ in pkgs.stdenv.mkDerivation {
     pkgs.gnumake
   ];
 
-  shellHocks = ''
+  shellHooks = ''
     export NIX_PATH="nixpkgs=${nixpkgs}";
   '';
 }
