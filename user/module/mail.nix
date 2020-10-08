@@ -12,33 +12,6 @@
 { config, pkgs, lib, ... }:
 let
   pws-dir = "${config.programs.password-store.settings.PASSWORD_STORE_DIR}";
-  #TODO Make solution generic, to generate config for each mail in domain.
-  # - so hierarchy need to resemble:
-  #     domain/mail-local-part -> if content of domain/ is a file
-  #     domain/username/mail-local-part -> if content of domain is dir
-  # - Add hash for each set, improves error diagnosis on changed directories
-  #     or filenames => but hashes can be "decrypted"
-  # - create strict mapping => all keys must have at least one file or error
-  # - Must strip filesuffix (use regex groups to add stripping of suffix)
-  # - For some key, there must not exist a corresponding file. Could also just
-  #     give the value. E.g. Port = "537"; //It could match a file, resulting
-  #     in the string 537 or the file does not exists and the string is still
-  #     "537". The Regex, ist either the evaluated nix-expression or the
-  #     literal value. NOTE: "*.gpg" might not evaluate to a file, the value
-  #     "*.gpg" might then be wrong. Should add a function like match "regex"
-  #     or use "value";
-  # Use import e.g. on
-  # accounts.email.accounts = import ./test.nix {
-  #   path = "pw-store/personal/emails";
-  #   template= {
-  #     domain: {
-  #       local-part: "regular"; //local part matches a list of regular files
-  #       username: {
-  #         aliases: "*"; // matches dir, regular, link,...
-  #       }; //username is a set == a directory
-  #     };
-  #   };
-  # };
 in
 {
   programs.mbsync.enable = true;
