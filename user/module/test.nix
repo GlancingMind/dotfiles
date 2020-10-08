@@ -30,92 +30,37 @@
 #in
 
 
-{pkgs ? import <nixpkgs> {}}: with pkgs.lib;
+{pkgs ? import <nixpkgs> {}}:
 let
   # files read by readDir
-  files = [ "sascha.sanjuan.gpg" "faux.dev.gpg" "hello.world" ];
+  emailfiles = [ "sascha.sanjuan.gpg" "faux.dev.gpg" "hello.world" ];
   # template
   email = { hello = 993; local-part = "(.*)\\.gpg$"; };
 
-  isEmpty = list: builtins.length list == 0;
+  MatchFilename = regex: filename:
+    builtins.match (toString regex) filename;
 
   MatchFiles = regex: files:
     builtins.concatLists
-      (builtins.filter
-        (value: value != null)
-        (map (file: builtins.match (toString regex) file) files)
+      (pkgs.lib.lists.remove null
+        (pkgs.lib.forEach files (MatchFilename regex))
       );
 
-  # Evaluates to the given subject if the condition is true, otherwise a
-  # default value is returned.
-  get = {predicate ? null, subject ? null, default ? null}:
-    if predicate subject then default else subject;
+  MatchFilesOrDefault = {regex, files, default}: let
+    matches = MatchFiles regex files;
+    noMatches = (matches == []);
+  in
+    if noMatches then default else matches;
 
-  set = pkgs.lib.mapAttrsRecursive (path: value:
-    get {
-      predicate=isEmpty;
-      subject=(MatchFiles value files);
-      default=value;}
-    ) email;
+  EvaluateTemplate = pkgs.lib.mapAttrsRecursive
+    (path: value: MatchFilesOrDefault {
+      regex=value;
+      files=emailfiles;
+      default=value;})
+    email;
 in
   #TODO
-  # - refactor names for readabity
+  # - Some regex expressions should not be evaluated by this script
   # - implement recursive resolve of nested sets
-  set
-
-
-#let
-#  expand = {path, template}: let
-#    dirs = builtins.readDir path;
-#    files = builtins.attrNames dirs;
-#    keys = builtins.attrNames template;
-#    ValueForKey = key: template: builtins.getAttr key template;
-#    FilterFiles = regex: files:
-#      builtins.filter (file: !builtins.isNull(builtins.match regex file)) files;
-#    forEachKey = map (key: FilterFiles (ValueForKey key template) files) keys;
-#  in
-#    forEachKey;
-#in {
-#  test = expand {
-#    path = /. + "/home/sascha/.local/share/password-store/personal/email/";
-#    template = {
-#      local-parts = ".*\\.de$";
-#    };
-#  };
-#}
-
-
-
-#{path, domain}: let
-#  filenames = builtins.attrNames (builtins.readDir (path+("/"+domain)));
-#  stripFileSuffix = suffix: file: builtins.head (builtins.split suffix file);
-#  local-parts = map (mail: (stripFileSuffix "\\.gpg$" mail)) filenames;
-#in
-#  local-parts
-
-#TODO
-# - Get all file of directory or + all subdirectories (rec)
-# - Match paths against groups => Convert paths to set
-# OR Write a set with names and match filepaths e.g. every key in the set is a
-# path resolving function or a key with another set.
-
-#TODO Must read path endings of last directory and filename. E.g. Tread a path
-#as list and take last elements. (use stringsplit on slash)
-
-#{path}: let
-#  resolve = path: let
-#    dirs = builtins.readDir path;
-#    names = builtins.attrNames dirs;
-#    types = builtins.attrValues dirs;
-#    expandPath = name: path + ("/" + name);
-#
-#    files = builtins.filter (name: builtins.getAttr name dirs != "directory") names;
-#    directories = builtins.filter (name: builtins.getAttr name dirs == "directory") names;
-#    pathingFiles = files; #map expandPath files;
-#    pathingDirs = map (dir: resolve (expandPath dir)) directories;
-#  in
-#    # keep all files by concatenating files with empty list (flattend
-#    # pathingDirs structure [[][]] => [])
-#    pathingFiles ++ (builtins.concatLists pathingDirs);
-#in
-#  resolve path
+  # -- use filterAttrs to remove all none directories.
+  EvaluateTemplate
