@@ -25,17 +25,17 @@
 #     };
 #   };
 # };
-#{path, template}: let
-#
-#in
 
-
+#TODO
+# - Some regex expressions should not be evaluated by this script
+# - implement recursive resolve of nested sets
+# -- use filterAttrs to remove all none directories.
 {pkgs ? import <nixpkgs> {}}:
 let
   # files read by readDir
-  emailfiles = [ "sascha.sanjuan.gpg" "faux.dev.gpg" "hello.world" ];
-  # template
-  email = { hello = 993; local-part = "(.*)\\.gpg$"; };
+  #emailfiles = [ "sascha.sanjuan.gpg" "faux.dev.gpg" "hello.world" ];
+  dirs = path: builtins.readDir (./. + path);
+  emailfiles = path: builtins.attrNames (dirs path);
 
   MatchFilename = regex: filename:
     builtins.match (toString regex) filename;
@@ -52,15 +52,33 @@ let
   in
     if noMatches then default else matches;
 
-  EvaluateTemplate = pkgs.lib.mapAttrsRecursive
-    (path: value: MatchFilesOrDefault {
-      regex=value;
-      files=emailfiles;
-      default=value;})
-    email;
+  #TODO recurse conditianal only when set contains alias!
+  EvaluateTemplate = {path, template}:
+    pkgs.lib.mapAttrsRecursive
+      (attrPath: value: MatchFilesOrDefault {
+        regex=value;
+        files=emailfiles path;
+        default=value;})
+      template;
 in
-  #TODO
-  # - Some regex expressions should not be evaluated by this script
-  # - implement recursive resolve of nested sets
-  # -- use filterAttrs to remove all none directories.
-  EvaluateTemplate
+  {
+    files=emailfiles "/test-store/email/outlook.com";
+    outlook=EvaluateTemplate {
+      path="/test-store/email/outlook.com/outlook-username";
+      template={
+        domain={
+          #TODO username is a set, but need to eval to a string...
+          # - or alias needs a path information...
+          username={};
+          alias="(.*)\\.gpg$";
+        };
+      };
+    };
+  }
+
+# Fill template = { domain = {username= {aliases="regex";};};};
+# to a set with where:
+#domain = web.de
+#username = name of subdirectory of domain
+#aliases = list of files matching given regex
+# Could merge this set with given home-manager config
