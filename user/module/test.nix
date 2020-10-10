@@ -34,8 +34,8 @@
 let
   # files read by readDir
   #emailfiles = [ "sascha.sanjuan.gpg" "faux.dev.gpg" "hello.world" ];
-  dirs = path: builtins.readDir (./. + path);
-  emailfiles = path: builtins.attrNames (dirs path);
+  stripHead = path: builtins.concatStringsSep "/" (builtins.tail
+        (pkgs.lib.strings.splitString "/" path));
 
   MatchFilename = regex: filename:
     builtins.match (toString regex) filename;
@@ -53,32 +53,97 @@ let
     if noMatches then default else matches;
 
   #TODO recurse conditianal only when set contains alias!
-  EvaluateTemplate = {path, template}:
-    pkgs.lib.mapAttrsRecursive
-      (attrPath: value: MatchFilesOrDefault {
-        regex=value;
-        files=emailfiles path;
-        default=value;})
-      template;
+  #EvaluateTemplate = {path, template}:
+  #  pkgs.lib.mapAttrsRecursive
+  #    (attrPath: value: MatchFilesOrDefault {
+  #      regex=value;
+  #      files=emailfiles ("/" + (stripHead path));
+  #      default=value;})
+  #    template;
+
+#  EvaluateTemplate = {path, template}: let
+#    entries = builtins.readDir (./. + path);
+#    files = builtins.attrNames (pkgs.lib.attrsets.filterAttrs (n: v: v != "directory") entries);
+#    dirs = builtins.attrNames (pkgs.lib.attrsets.filterAttrs (n: v: v == "directory") entries);
+#    descend = dir: builtins.concatStringsSep "/" [ path dir ];
+#  in
+#    if dirs != {} then
+#      pkgs.lib.mapAttrsRecursive
+#        (attrPath: value: MatchFilesOrDefault {
+#          regex=value;
+#          files=files;
+#          default=value;})
+#        template
+#    else
+#      path;
+
+  EvaluateTemplate = {path, template}: let
+    # convert template to large regex!
+    depth = builtins.length;
+
+    # Group directories in path in a set called domain
+    # Group directories in domainpath in a set called username
+    # Group files in domainpath in a set called address
+
+    # TODO: must add files to directories!
+    files = path: let
+      fileset = builtins.readDir path;
+      dirset = pkgs.lib.attrsets.filterAttrs (n: v: v == "directory") fileset;
+      tree = builtins.mapAttrs (name: type: files (path+"/"+name)) dirset;
+    in fileset // tree;
+
+    #NOTE
+    # builtins.dirOf "(.*)" => ".";
+    # builtins.dirOf "hello/(.*)" => "hello";
+    # builtins.dirOf "/hello/(.*)" => "/hello";
+    # Could use it to map regex to dirctory!
+
+    resolveValue = v: MatchFilesOrDefault {
+        regex=v;
+        files=files;
+        default=v;};
+
+    resolve = {name, value}:
+        pkgs.lib.attrsets.nameValuePair (resolveValue name) (resolveValue
+        value);
+
+    mapping = pkgs.lib.mapAttrsRecursive
+      (n: v: resolve {name=n; value=v;})
+      rec {username="^(.*)"; aliases="${username}/(.*)\\.gpg$";};
+  in
+    #mapping;
+    files "/home/sascha/nix-config/user/module/test-store";
 in
   {
-    files=emailfiles "/test-store/email/outlook.com";
     outlook=EvaluateTemplate {
-      path="/test-store/email/outlook.com/outlook-username";
+      path="/test-store/email/outlook.com";
       template={
-        domain={
-          #TODO username is a set, but need to eval to a string...
-          # - or alias needs a path information...
-          username={};
+        user={
+          name="(.*)";
           alias="(.*)\\.gpg$";
         };
       };
     };
   }
 
-# Fill template = { domain = {username= {aliases="regex";};};};
-# to a set with where:
-#domain = web.de
-#username = name of subdirectory of domain
-#aliases = list of files matching given regex
+#TODO
+# Fill template:
+#   ./test-store/email={domain={username={aliases="regex";};};};
+# Exprected outcome:
+#   domain = { outlook.com, web.de }
+#   "outlook.com".username = outlook-username
+#   "outlook.com".username.aliases = [ alias1 alias2 ]
+#   "web.de".username = sascha.sanjuan
+#   "web.de".username.alias = []
 # Could merge this set with given home-manager config
+#
+# NOTE Give config via set. Every entry is applied via sorting of the filepath
+#
+#{
+#  path = "...";
+#  configs = rec { acc1={...}; acc2={...}; acc3=domain2; ...};
+#  #NOTE domain3 uses the same config as domain2, but values are still
+#  # indiviually supsitited
+#}
+#
+#apply config={...} domain=.../email/web.de
