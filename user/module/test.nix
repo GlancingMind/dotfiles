@@ -33,57 +33,7 @@
 {pkgs ? import <nixpkgs> {}}:
 let
   # files read by readDir
-  #emailfiles = [ "sascha.sanjuan.gpg" "faux.dev.gpg" "hello.world" ];
-  stripHead = path: builtins.concatStringsSep "/" (builtins.tail
-        (pkgs.lib.strings.splitString "/" path));
-
-  MatchFilename = regex: filename:
-    builtins.match (toString regex) filename;
-
-  MatchFiles = regex: files:
-    builtins.concatLists
-      (pkgs.lib.lists.remove null
-        (pkgs.lib.forEach files (MatchFilename regex))
-      );
-
-  MatchFilesOrDefault = {regex, files, default}: let
-    matches = MatchFiles regex files;
-    noMatches = (matches == []);
-  in
-    if noMatches then default else matches;
-
-  #TODO recurse conditianal only when set contains alias!
-  #EvaluateTemplate = {path, template}:
-  #  pkgs.lib.mapAttrsRecursive
-  #    (attrPath: value: MatchFilesOrDefault {
-  #      regex=value;
-  #      files=emailfiles ("/" + (stripHead path));
-  #      default=value;})
-  #    template;
-
-#  EvaluateTemplate = {path, template}: let
-#    entries = builtins.readDir (./. + path);
-#    files = builtins.attrNames (pkgs.lib.attrsets.filterAttrs (n: v: v != "directory") entries);
-#    dirs = builtins.attrNames (pkgs.lib.attrsets.filterAttrs (n: v: v == "directory") entries);
-#    descend = dir: builtins.concatStringsSep "/" [ path dir ];
-#  in
-#    if dirs != {} then
-#      pkgs.lib.mapAttrsRecursive
-#        (attrPath: value: MatchFilesOrDefault {
-#          regex=value;
-#          files=files;
-#          default=value;})
-#        template
-#    else
-#      path;
-
-  EvaluateTemplate = {path, template}: let
-    # convert template to large regex!
-    depth = builtins.length;
-
-    # Group directories in path in a set called domain
-    # Group directories in domainpath in a set called username
-    # Group files in domainpath in a set called address
+  EvaluateTemplate = {path, filestructure, template}: let
 
     recReadDir = path: let
       fileset = builtins.readDir path;
@@ -91,29 +41,41 @@ let
       tree = builtins.mapAttrs (name: type: recReadDir (path+"/"+name)) dirset;
     in fileset // tree;
 
-    getAttrsByDepth = path: dirset:
-      builtins.attrNames (pkgs.lib.getAttrFromPath path dirset);
+    # TODO convert list of access names to access pattern e.g.
+    # domain={username...} => username => [[] 1] => match username pattern
+    # which will be used to get the attribute by indices from recReadDir
 
-    domains = getAttrsByDepth [];
-    usernames = domain: getAttrsByDepth [domain];
+    # { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };};
+    # username should convert to [ 0 1 ]
+    resolveRec = set: let
+      recDepth = builtins.length;
+      prevPath = attrPath: builtins.tail (pkgs.lib.lists.reverseList attrPath);
+    in pkgs.lib.attrsets.mapAttrsRecursive
+      (attrPath: v: (recDepth attrPath)+recDepth(prevPath attrPath)) set;
 
-    # TODO map recursivly over template. Apply for each key getAttrsByDepth
-    # like done for e.g. username. Replace value for this key with return of
-    # getAttrsByDepth
-    # NOTE want to say domain and get the list of domains.
-    # By saying "domain 1" get the list of usernames of the first domain
-    # So must assign domain the number 1, username the number 2, ...
-    # This indices will be used to fetch values from dirset!
-    resolve = set: let
-      attrsList = builtins.attrNames set;
+    getIndex = set: attri: let
+      names = builtins.attrNames set;
       # Given e.g. { a = ""; b = "" } => [ { a = 1; } { b = 2; } ]
-      keyIndexSetList = pkgs.lib.lists.imap1 (i: v: { "${v}"=i;} ) attrsList;
+      listOfKeyIndexSet = pkgs.lib.lists.imap0 (i: v: {${v} = i;}) names;
       # Merges all sets in list to one set. { a = 1; b = 2; }
-      keyIndexMap = pkgs.lib.lists.fold (a: b: a // b) {} keyIndexSetList;
+      indexSet = pkgs.lib.lists.fold (a: b: a // b) {} listOfKeyIndexSet;
     in
-      keyIndexMap;
+      builtins.getAttr attri indexSet;
 
-    getAttrByIndices = set: indices: let
+    # Converts an attribute access path [ domain username ]
+    # to an index access path [ 0 1 ]
+    attrPathToIndexPath = set: attriList: let
+      key = builtins.head attriList;
+      index = getIndex set key;
+      tail = builtins.tail attriList;
+      subset = builtins.getAttr key set;
+    in
+      if tail == [] then
+        [ index ]
+      else
+        [ index ] ++  (attrPathToIndexPath subset tail);
+
+    getAttrByIndicesPath = set: indices: let
       list = pkgs.lib.attrsets.mapAttrsToList (n: v: { "${n}"=v; } ) set;
       index = builtins.head indices;
       restIndices = builtins.tail indices;
@@ -121,82 +83,65 @@ let
       # Retrieve value of element by unwraping it's only value via head.
       elementValue = builtins.head (builtins.attrValues element);
     in
-      if restIndices == [] then
+      if index == [] then
+        builtins.attrNames set
+      else if restIndices == [] then
         element
       else
-        getAttrByIndices elementValue restIndices;
+        getAttrByIndicesPath elementValue restIndices;
 
+    getAttrNameByIndicesPath = set: indices:
+      builtins.head (builtins.attrNames (getAttrByIndicesPath set indices));
 
-    #NOTE will return [email [outlook.com [alias1 alias2]] [web.de [sascha.sanjuan]]]
-    # Then replace this lists with their depth by using lists.imap
-    # => [1 [ 1 [ 1 2 ]] [ 2 [ 1 ]]]
-    # Or use builtins.elemAt for each given list element
-    # => [ email [ ...] [ ]] elemAt foreach [ 1 1 2 ]
-    # Above index access pattern [ 1 1 2 ] will be generated by using e.g.
-    # [ domain username 2 ]...
-    #attrs2ListRec = let
-    #  set = recReadDir "/home/sascha/nix-config/user/module/test-store/email";
-    #  values =
-    #  #pkgs.lib.attrsets.mapAttrsRecursive
-    #  #(n: v: list.imap pkgs.lib.attrsets.mapAttrsToList (pkgs.lib.attrsets.getAttrFromPath n))
-    #in
-    #  set;
+    unfold = set:
+      builtins.concatLists
+      (builtins.attrValues
+        (builtins.mapAttrs (n: v: map (value: { ${n} = value; }) v)
+        set));
 
-    #NOTE
-    # builtins.dirOf "(.*)" => ".";
-    # builtins.dirOf "hello/(.*)" => "hello";
-    # builtins.dirOf "/hello/(.*)" => "/hello";
-    # Could use it to map regex to dirctory!
+    fill = path: let
+      # get value for attrName from reading filestructure
+      fileset = builtins.readDir path;
+      dirset = pkgs.lib.attrsets.filterAttrs (n: v: v == "directory") fileset;
+      dirnames = builtins.attrNames dirset;
+      # Gives: { username = [ "outlook.com" "web.de" ]; }
+      attrFileMap = pkgs.lib.attrsets.mapAttrs (n: v: dirnames) filestructure;
+      # will be unfolded via unfold
+      attrs = unfold attrFileMap;
 
-    #resolveValue = v: MatchFilesOrDefault {
-    #    regex=v;
-    #    files=recReadDir;
-    #    default=v;};
+      # TODO Foreach "username" create copy of template and fill in
 
-    #resolve = {name, value}:
-    #    pkgs.lib.attrsets.nameValuePair (resolveValue name) (resolveValue
-    #    value);
-
-    #mapping = pkgs.lib.mapAttrsRecursive
-    #  (n: v: resolve {name=n; value=v;})
-    #  rec {username="^(.*)"; aliases="${username}/(.*)\\.gpg$";};
+      # TODO add address
+    #in map (dir: (attrs ++ fill (path+"/"+dir))) dirnames;
+    in attrFileMap;
   in
-    #mapping;
-    #usernames "web.de" (recReadDir "/home/sascha/nix-config/user/module/test-store/email");
-    getAttrByIndices
-      { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };}
-      [0 0];
+    #recReadDir "/home/sascha/nix-config/user/module/test-store/email";
+    #resolveRec { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };};
+    #attrPathToIndexPath
+    #  { hello=""; domain.user=""; domain.username={address="(.*)\\.gpg$"; }; }
+    #  [ "domain" "username" "address" ];
+    #getAttrByIndicesPath
+    #  (recReadDir "/home/sascha/nix-config/user/module/test-store/email")
+    #  [ 2 [] ];
+    #genAccessPattern {"domain" = "";};
+    fill "/home/sascha/nix-config/user/module/test-store/email/outlook.com";
 in
   {
     outlook=EvaluateTemplate {
-      path="/test-store/email/outlook.com";
+      path="/home/sascha/nix-config/user/module/test-store/email/outlook.com";
+      filestructure = { username = { address = "(.*)\\.gpg$"; }; };
       template={
-        user={
-          name="(.*)";
-          alias="(.*)\\.gpg$";
-        };
+        #NOTE use username as account name instead of domain name
+        username = "TO BE FILLED IN";
+        address="TO BE FILLED IN";
+        port = 993;
+        name = "Poh";
       };
     };
   }
 
-#TODO
-# Fill template:
-#   ./test-store/email={domain={username={aliases="regex";};};};
-# Exprected outcome:
-#   domain = { outlook.com, web.de }
-#   "outlook.com".username = outlook-username
-#   "outlook.com".username.aliases = [ alias1 alias2 ]
-#   "web.de".username = sascha.sanjuan
-#   "web.de".username.alias = []
-# Could merge this set with given home-manager config
-#
-# NOTE Give config via set. Every entry is applied via sorting of the filepath
-#
-#{
-#  path = "...";
-#  configs = rec { acc1={...}; acc2={...}; acc3=domain2; ...};
-#  #NOTE domain3 uses the same config as domain2, but values are still
-#  # indiviually supsitited
-#}
-#
-#apply config={...} domain=.../email/web.de
+#NOTE
+# builtins.dirOf "(.*)" => ".";
+# builtins.dirOf "hello/(.*)" => "hello";
+# builtins.dirOf "/hello/(.*)" => "/hello";
+# Could use it to map regex to dirctory!
