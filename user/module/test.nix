@@ -41,10 +41,6 @@ let
       tree = builtins.mapAttrs (name: type: recReadDir (path+"/"+name)) dirset;
     in fileset // tree;
 
-    # TODO convert list of access names to access pattern e.g.
-    # domain={username...} => username => [[] 1] => match username pattern
-    # which will be used to get the attribute by indices from recReadDir
-
     # { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };};
     # username should convert to [ 0 1 ]
     resolveRec = set: let
@@ -56,7 +52,7 @@ let
     getIndex = set: attri: let
       names = builtins.attrNames set;
       # Given e.g. { a = ""; b = "" } => [ { a = 1; } { b = 2; } ]
-      listOfKeyIndexSet = pkgs.lib.lists.imap0 (i: v: {${v} = i;}) names;
+      listOfKeyIndexSet = pkgs.lib.lists.imap1 (i: v: {${v} = i;}) names;
       # Merges all sets in list to one set. { a = 1; b = 2; }
       indexSet = pkgs.lib.lists.fold (a: b: a // b) {} listOfKeyIndexSet;
     in
@@ -83,8 +79,8 @@ let
       # Retrieve value of element by unwraping it's only value via head.
       elementValue = builtins.head (builtins.attrValues element);
     in
-      if index == [] then
-        builtins.attrNames set
+      if index == 0 then
+        set
       else if restIndices == [] then
         element
       else
@@ -99,32 +95,32 @@ let
         (builtins.mapAttrs (n: v: map (value: { ${n} = value; }) v)
         set));
 
+    # TODO map over template, take every key and get the index of this key
+    # from filestructure. Then fetch content from file structure and put it in
+    # template.
+    # TODO when key exists in template, but not in filestructure, error
+    # occures.
+    # TODO must map recReadDir filestructure to filestructure attrset
+    # => create list with sets of
+    # { username="outlook-username"; address=[alias1.gpg alias2.gpg]}
+    # { username="sascha.sanjuan"; address=[]}
     fill = path: let
-      # get value for attrName from reading filestructure
-      fileset = builtins.readDir path;
-      dirset = pkgs.lib.attrsets.filterAttrs (n: v: v == "directory") fileset;
-      dirnames = builtins.attrNames dirset;
-      # Gives: { username = [ "outlook.com" "web.de" ]; }
-      attrFileMap = pkgs.lib.attrsets.mapAttrs (n: v: dirnames) filestructure;
-      # will be unfolded via unfold
-      attrs = unfold attrFileMap;
-
-      # TODO Foreach "username" create copy of template and fill in
-
-      # TODO add address
-    #in map (dir: (attrs ++ fill (path+"/"+dir))) dirnames;
-    in attrFileMap;
+      fileset = recReadDir path;
+      index = getIndex filestructure "username";
+      files = getAttrByIndicesPath fileset [0];
+    in
+      files;
   in
-    #recReadDir "/home/sascha/nix-config/user/module/test-store/email";
+    fill "/home/sascha/nix-config/user/module/test-store/email/outlook.com";
     #resolveRec { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };};
     #attrPathToIndexPath
     #  { hello=""; domain.user=""; domain.username={address="(.*)\\.gpg$"; }; }
     #  [ "domain" "username" "address" ];
     #getAttrByIndicesPath
-    #  (recReadDir "/home/sascha/nix-config/user/module/test-store/email")
-    #  [ 2 [] ];
-    #genAccessPattern {"domain" = "";};
-    fill "/home/sascha/nix-config/user/module/test-store/email/outlook.com";
+    #  (recReadDir "/home/sascha/nix-config/user/module/test-store/email/web.de")
+    #  ( attrPathToIndexPath
+    #  { username = { address = "(.*)\\.gpg$"; }; }
+    #  ["username"] );
 in
   {
     outlook=EvaluateTemplate {
