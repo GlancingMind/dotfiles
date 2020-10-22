@@ -1,16 +1,16 @@
 .POSIX:
 
+.DEFAULT:
+	home
+
 BACKUP_DIR = $(HOME)/backup
+USE_NIX_PLUGINS = --option extra-builtins-file $(PWD)/nix-plugins/pass.nix
 
 home: user/home.nix
-	nix-shell --run "home-manager -f $? switch"
+	nix-shell --run "home-manager $(USE_NIX_PLUGINS) -f $? switch"
 
-update-machine-config: machine/laptop/deployment.nix
-	nix-shell --run 'nixops modify -d laptop $?'
-	nix-shell --run 'nixops deploy -d laptop'
-
-setup-machine-config: machine/laptop/deployment.nix
-	nix-shell --run 'nixops create -d laptop $?'
+switch: machine/laptop/configuration.nix
+	nixos-rebuild -I nixos-config=$? switch
 
 #TODO backup will be always run, or not overriden even when file changed
 # should only copy files, which have changed.

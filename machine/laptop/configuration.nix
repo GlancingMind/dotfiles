@@ -5,12 +5,29 @@
 { config, lib, pkgs, ... }:
 {
   imports = [
+    ./hardware-configuration.nix
+
     ../role/systemd-networkd.nix
     ../role/sound.nix
     ../role/virtualization.nix
     ../role/user.nix
 #    ../role/kubernetes.nix
   ];
+
+  # Need the nix-plugins Plugin, to write a wrapper for pass in order to
+  # retrieve passwords while evaluating nix files.
+  # See:
+  #   https://elvishjerricco.github.io/2018/06/24/secure-declarative-key-management.html
+  #   https://www.thedroneely.com/posts/nixops-towards-the-final-frontier/
+  nix.extraOptions = ''
+    # uncomment:
+    #   trusted-users = root @wheel
+    # to get rid of warning:
+    #   warning: ignoring the user-specified setting 'extra-builtins-file',
+    #   because it is a restricted setting and you are not a trusted user
+
+    plugin-files = ${pkgs.nix-plugins}/lib/nix/plugins/libnix-extra-builtins.so
+  '';
 
   networking.firewall.allowedTCPPorts = [ 22 ];
   services.openssh.enable = true;

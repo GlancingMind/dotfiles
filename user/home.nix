@@ -6,6 +6,7 @@
   imports = [
     ./role/wayland/sway.nix
     #./role/x11/i3.nix
+    ./module/mail.nix
     ./module/editor/vim/setup.nix
     ./module/shell/zsh/zsh.nix
     ./module/terminal/alacritty/settings.nix
@@ -31,8 +32,8 @@
     htop unzip dash
     xdg_utils
     #gitAndTools.git-bug
-    libvirt pkgs.vagrant docker-compose
-    vis dvtm abduco #as Vim and Tmux alternative
+    libvirt vagrant docker-compose
+    #vis dvtm abduco #as Vim and Tmux alternative
     zathura
     chromium
     #vscodium
@@ -54,5 +55,5 @@
       # use NIX recursive set as $VISUAL will be empty
       # because home-manager sorts variables and EDITOR
       # will be set before VISUAL is known.
-  };
-}
+    };
+  }
