@@ -1,5 +1,3 @@
-# This is work in progress!
-
 # Base Installation
 
 1. Connect to network via:
@@ -7,18 +5,17 @@
     $ wpa_passphrase 'SSID' 'KEY' > passphrase.txt
     $ wpa_supplicant -B -i <interface> -c passphrase.txt # Interface could be wlp3s0
     ```
-2. Call install.sh in machine/base to partition disk
+2. Call install.sh in machine/base to partition disk.
 3. Copy this installation information over to root directory.
-4. Reboot and login to root
+4. Reboot and login to root.
 5. reconnect to network like in step 1.
-6. use Makefile targets to run nixops (install real os)
-7. copy this stuff to user/<new-users-name>
+6. Run ```$ make switch``` to install nixos.
+7. Delete or copy this while directory over to a diffrent user directory.
 
-# Setup and update machine configuration
+# Update machine configuration
 
-```console
-$ make setup-machine-config
-$ make update-machine-config
+```shell
+$ make switch
 ```
 
 # Setup home environment
