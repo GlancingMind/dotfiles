@@ -33,7 +33,7 @@
 {pkgs ? import <nixpkgs> {}}:
 let
   # files read by readDir
-  EvaluateTemplate = {path, filestructure, template}: let
+  EvaluateTemplate = {path, patterns, template}: let
 
     recReadDir = path: let
       fileset = builtins.readDir path;
@@ -41,91 +41,43 @@ let
       tree = builtins.mapAttrs (name: type: recReadDir (path+"/"+name)) dirset;
     in fileset // tree;
 
-    # { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };};
-    # username should convert to [ 0 1 ]
-    resolveRec = set: let
-      recDepth = builtins.length;
-      prevPath = attrPath: builtins.tail (pkgs.lib.lists.reverseList attrPath);
-    in pkgs.lib.attrsets.mapAttrsRecursive
-      (attrPath: v: (recDepth attrPath)+recDepth(prevPath attrPath)) set;
+    joinToPath = pathComponents: builtins.concatStringsSep "/" pathComponents;
 
-    getIndex = set: attri: let
-      names = builtins.attrNames set;
-      # Given e.g. { a = ""; b = "" } => [ { a = 1; } { b = 2; } ]
-      listOfKeyIndexSet = pkgs.lib.lists.imap1 (i: v: {${v} = i;}) names;
-      # Merges all sets in list to one set. { a = 1; b = 2; }
-      indexSet = pkgs.lib.lists.fold (a: b: a // b) {} listOfKeyIndexSet;
+    filesetToPaths = set: let
+      listPathsInSet = pkgs.lib.attrsets.mapAttrsRecursive (n: v: n) set;
+      listPaths = pkgs.lib.attrsets.collect builtins.isList listPathsInSet;
     in
-      builtins.getAttr attri indexSet;
+      map joinToPath listPaths;
 
-    # Converts an attribute access path [ domain username ]
-    # to an index access path [ 0 1 ]
-    attrPathToIndexPath = set: attriList: let
-      key = builtins.head attriList;
-      index = getIndex set key;
-      tail = builtins.tail attriList;
-      subset = builtins.getAttr key set;
-    in
-      if tail == [] then
-        [ index ]
-      else
-        [ index ] ++  (attrPathToIndexPath subset tail);
-
-    getAttrByIndicesPath = set: indices: let
-      list = pkgs.lib.attrsets.mapAttrsToList (n: v: { "${n}"=v; } ) set;
-      index = builtins.head indices;
-      restIndices = builtins.tail indices;
-      element = builtins.elemAt list index;
-      # Retrieve value of element by unwraping it's only value via head.
-      elementValue = builtins.head (builtins.attrValues element);
-    in
-      if index == 0 then
-        set
-      else if restIndices == [] then
-        element
-      else
-        getAttrByIndicesPath elementValue restIndices;
-
-    getAttrNameByIndicesPath = set: indices:
-      builtins.head (builtins.attrNames (getAttrByIndicesPath set indices));
-
-    unfold = set:
-      builtins.concatLists
-      (builtins.attrValues
-        (builtins.mapAttrs (n: v: map (value: { ${n} = value; }) v)
-        set));
-
-    # TODO map over template, take every key and get the index of this key
-    # from filestructure. Then fetch content from file structure and put it in
-    # template.
-    # TODO when key exists in template, but not in filestructure, error
-    # occures.
-    # TODO must map recReadDir filestructure to filestructure attrset
-    # => create list with sets of
-    # { username="outlook-username"; address=[alias1.gpg alias2.gpg]}
-    # { username="sascha.sanjuan"; address=[]}
     fill = path: let
+      matchPattern = pattern: map (path: builtins.match pattern path) pathList;
+      filterNull = list: (builtins.filter (item: !builtins.isNull item) list);
+
       fileset = recReadDir path;
-      index = getIndex filestructure "username";
-      files = getAttrByIndicesPath fileset [0];
+      pathList = filesetToPaths fileset;
+
+      matchingPaths = builtins.mapAttrs (name: pattern: matchPattern pattern) patterns;
+      nonNull = builtins.mapAttrs (n: list: filterNull list) matchingPaths;
+      paths = builtins.mapAttrs (n: v: builtins.concatLists v) nonNull;
     in
-      files;
+      builtins.mapAttrs (n: v: pkgs.lib.lists.unique v) paths;
   in
-    fill "/home/sascha/nix-config/user/module/test-store/email/outlook.com";
-    #resolveRec { hello=""; domain={ user=""; username={address="(.*)\\.gpg$"; }; };};
-    #attrPathToIndexPath
-    #  { hello=""; domain.user=""; domain.username={address="(.*)\\.gpg$"; }; }
-    #  [ "domain" "username" "address" ];
-    #getAttrByIndicesPath
-    #  (recReadDir "/home/sascha/nix-config/user/module/test-store/email/web.de")
-    #  ( attrPathToIndexPath
-    #  { username = { address = "(.*)\\.gpg$"; }; }
-    #  ["username"] );
+    fill path;
 in
   {
     outlook=EvaluateTemplate {
       path="/home/sascha/nix-config/user/module/test-store/email/outlook.com";
-      filestructure = { username = { address = "(.*)\\.gpg$"; }; };
+      patterns = let
+        username = "(.*)/.*";
+        address = "(.*)/(.*)\\.gpg$";
+        # TODO with current patterns, could remove redundancy with
+        # lists.intersectLists or merge both lists
+        # TODO concatenation of username and address seem not to work easily
+        # want that for address username
+      in {
+        inherit username;
+        inherit address;
+      };
       template={
         #NOTE use username as account name instead of domain name
         username = "TO BE FILLED IN";
