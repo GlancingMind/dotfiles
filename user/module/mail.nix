@@ -2,24 +2,28 @@
 let
   pws-dir = "${config.programs.password-store.settings.PASSWORD_STORE_DIR}";
   pass = (import ../../nix-plugins).nix-plugins.pass;
-  schema = {
-    email = "email: +(.*)";
-    login = "login: +(.*)";
-  };
-in
-{
-  programs.mbsync.enable = true;
+  pass-name = expandedPath:
+    lib.strings.removeSuffix ".gpg" (
+      lib.strings.removePrefix (pws-dir+"/") expandedPath);
+  extractAppPassword = "sed -n 's/^.*app-password:\\s*\\(\\S*\\).*$/\\1/p'";
+  template = import ./test.nix {};
 
-  accounts.email.accounts = {
-    web = let
-      passwordPath = "/personal/email/web.de/sascha.sanjuan";
-      path = pws-dir + passwordPath;
-      addresses = pass.decrypt.lookup schema.email passwordPath;
-    in {
-        primary = true;
-        address = builtins.head addresses;
-        userName = builtins.head addresses;
-        passwordCommand = "pass ${path} | head -n 1";
+  webDeAccounts = builtins.listToAttrs (template.expand {
+    path="${pws-dir}/personal/email/web.de";
+    do = {expandedPath}: {
+      name = pass-name expandedPath;
+      value = rec {
+        primary = "92747cf9026d18d1d133fcde0b64a2904c1ec1f0" == builtins.hashString "sha1" address;
+        address = builtins.head (pass.decrypt.lookup "email: +(.*)" (pass-name expandedPath));
+        userName = address;
+        passwordCommand="pass show ${pass-name expandedPath}";
+
+        folders = {
+          drafts = "Entwurf";
+          inbox = "Inbox";
+          sent = "Gesendet";
+          trash = "Papierkorb";
+        };
 
         imap = {
           host = "imap.web.de";
@@ -32,21 +36,116 @@ in
 
         mbsync = {
           enable = true;
-        #  create = "both";
-        #  groups = {
-        #    "web".channels = {
-        #      "web-default" = {
-        #        masterPattern = "web-remote";
-        #        slavePattern = "web-local";
-        #        patterns = "* !INBOX !Posteingang";
-        #      };
-        #      "web-inbox" = {
-        #        masterPattern = "INBOX";
-        #        slavePattern = "Posteingang";
-        #      };
-        #    };
-        #  };
+          create = "maildir";
         };
       };
-  };
+    };
+  });
+
+  outlookAccounts = builtins.listToAttrs (template.expand {
+    path="${pws-dir}/personal/email/outlook.com";
+    do = {expandedPath}: {
+      name = pass-name expandedPath;
+      value = let
+      in rec {
+        address = builtins.head (pass.decrypt.lookup "email: +(.*)" (pass-name expandedPath));
+        userName = address;
+        passwordCommand= "pass show ${pass-name expandedPath} | awk '/app-password:/ {print $2}'";
+
+        folders = {
+          drafts = "Drafts";
+          inbox = "Inbox";
+          sent = "Sent";
+          trash = "Deleted"; #
+        };
+
+        imap = {
+          host = "outlook.office365.com";
+          port = 993;
+          tls = {
+            enable = true;
+            useStartTls = false;
+          };
+        };
+
+        mbsync = {
+          enable = true;
+          create = "maildir";
+        };
+      };
+    };
+  });
+
+  #TODO
+  # load mbsync from unstable channel and test in shell, if problem is resolved
+  yahooAccounts = builtins.listToAttrs (template.expand {
+    path="${pws-dir}/personal/email/yahoo.com";
+    do = {expandedPath}: {
+      name = pass-name expandedPath;
+      value = rec {
+        address = builtins.head (pass.decrypt.lookup "email: +(.*)" (pass-name expandedPath));
+        userName = address;
+        passwordCommand= "pass show ${pass-name expandedPath} | awk '/app-password:/ {print $2}'";
+
+        folders = {
+          drafts = "Draft"; #
+          inbox = "Inbox";
+          sent = "Sent";
+          trash = "Trash";
+        };
+
+        imap = {
+          host = "imap.mail.yahoo.com";
+          port = 993;
+          tls = {
+            enable = true;
+            useStartTls = false;
+          };
+        };
+
+        mbsync = {
+          enable = true;
+          create = "maildir";
+        };
+      };
+    };
+  });
+
+  thMail = builtins.listToAttrs (template.expand {
+    path="${pws-dir}/personal/email/mni.thm.de";
+    do = {expandedPath}: {
+      name = pass-name expandedPath;
+      value = rec {
+        address = builtins.head (pass.decrypt.lookup "email: +(.*)" (pass-name expandedPath));
+        userName = builtins.head (pass.decrypt.lookup "login: +(.*)" (pass-name expandedPath));
+        passwordCommand="pass show ${pass-name expandedPath}";
+
+        folders = {
+          drafts = "Drafts";#
+          inbox = "Inbox";  #
+          sent = "Sent";    #
+          trash = "Trash";  #
+        };
+
+        imap = {
+          host = "mailgate.thm.de";
+          port = 993;
+          tls = {
+            enable = true;
+            useStartTls = false;
+          };
+        };
+
+        mbsync = {
+          enable = true;
+          create = "maildir";
+        };
+      };
+    };
+  });
+in
+{
+  programs.mbsync.enable = true;
+
+  accounts.email.accounts = outlookAccounts // yahooAccounts // webDeAccounts // thMail;
 }
