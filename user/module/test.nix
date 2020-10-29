@@ -1,4 +1,5 @@
 {pkgs ? import <nixpkgs> {}}:
+with pkgs.lib;
 let
   recReadDir = path: let
     fileset = builtins.readDir path;
@@ -14,35 +15,13 @@ let
   in
     map joinToPath listPaths;
 
-
   fill = template: schema:
     template (builtins.intersectAttrs (builtins.functionArgs template) schema);
 
-  expand = {path, template, schema, ...}: let
+  expand = {path, do}: let
     fileset = recReadDir path;
     paths = filesetToPaths fileset;
-    nameValuePair = pkgs.lib.attrsets.nameValuePair;
-    setTemplateAttrs = path: schema
-    filledTemplates = map (file: nameValuePair
-      (path+"/"+file) (fill template (schema//{template.path=path+"/"+file;}))) paths;
-  in builtins.listToAttrs filledTemplates;
-
-  removePrefix = pkgs.lib.strings.removePrefix;
+  in map (file: do {expandedPath=path+"/"+file;}) paths;
 in {
-  #TODO 2. can use schema attrs, as direct set in template. => use default
-  # params in template args! NOTE must then check, that every arg has a
-  # default value! (already possible with functionArgs!
-  config=expand {
-    path="/home/sascha/.local/share/password-store/personal/email/web.de";
-    schema = {
-      foo="bar";
-    };
-    template = {foo, template}: let
-      passwordStorePath = "/home/sascha/.local/share/password-store/";
-      pass-name = removePrefix passwordStorePath template.path;
-    in {
-      hello=foo;
-      passCmd="pass show ${pass-name}";
-    };
-  };
+  inherit expand;
 }
