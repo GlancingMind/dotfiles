@@ -9,6 +9,9 @@ USE_NIX_PLUGINS = --option extra-builtins-file $(PWD)/nix-plugins/pass.nix
 home: user/home.nix
 	nix-shell --run "home-manager $(USE_NIX_PLUGINS) -f $? switch"
 
+repl:
+	nix repl $(USE_NIX_PLUGINS)
+
 switch: machine/laptop/configuration.nix
 	nix-shell --run "nixos-rebuild -I nixos-config=$? switch"
 
