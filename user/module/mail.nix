@@ -20,6 +20,7 @@ let
       primary = "92747cf9026d18d1d133fcde0b64a2904c1ec1f0" == builtins.hashString "sha1" address;
       address = pass.decrypt.lookupFirst schema.email (inStorePath account);
       userName = address;
+      realName = "";
       passwordCommand= "pass show ${inStorePath account}";
 
       folders = {
@@ -38,10 +39,18 @@ let
         };
       };
 
+      smtp = {
+        host = "smtp.web.de";
+        port = 587;
+        tls.enable = true;
+      };
+
       mbsync = {
         enable = true;
         create = "maildir";
       };
+      msmtp.enable = true;
+      notmuch.enable = true;
     };
   in expandConfig "@web.de" config;
 
@@ -67,10 +76,18 @@ let
         };
       };
 
+      smtp = {
+        host = "smtp.office365.com";
+        port = 587;
+        tls.enable = true;
+      };
+
       mbsync = {
         enable = true;
         create = "maildir";
       };
+      msmtp.enable = true;
+      notmuch.enable = true;
     };
   in expandConfig "@outlook.com" config;
 
@@ -78,6 +95,7 @@ let
     config = account: rec {
       address = pass.decrypt.lookupFirst schema.email (inStorePath account);
       userName = address;
+      realName = "";
       passwordCommand= "pass show ${inStorePath account} | awk '/app-password:/ {print $2}'";
 
       folders = {
@@ -96,10 +114,18 @@ let
         };
       };
 
+      smtp = {
+        host = "smtp.mail.yahoo.com";
+        port = 587;
+        tls.enable = true;
+      };
+
       mbsync = {
         enable = true;
         create = "maildir";
       };
+      msmtp.enable = true;
+      notmuch.enable = true;
     };
   in expandConfig "@yahoo.de" config;
 
@@ -107,6 +133,7 @@ let
     config = account: rec {
       address = pass.decrypt.lookupFirst schema.email (inStorePath account);
       userName = pass.decrypt.lookupFirst schema.login (inStorePath account);
+      realName = "";
       passwordCommand= "pass show ${inStorePath account}";
 
       folders = {
@@ -125,15 +152,25 @@ let
         };
       };
 
+      smtp = {
+        host = "mailgate.thm.de";
+        port = 587;
+        tls.enable = true;
+      };
+
       mbsync = {
         enable = true;
         create = "maildir";
       };
+      msmtp.enable = true;
+      notmuch.enable = true;
     };
   in expandConfig "@mni.thm.de" config;
 in
 {
   programs.mbsync.enable = true;
+  programs.msmtp.enable = true;
+  programs.notmuch.enable = true;
 
   accounts.email.accounts = webDeAccounts // yahooAccounts
     // outlookAccounts // thAccounts;
