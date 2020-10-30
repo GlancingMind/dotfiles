@@ -1,5 +1,3 @@
 {
-  nix-plugins = {
-    pass = builtins.extraBuiltins.pass;
-  };
+  pass = builtins.extraBuiltins.pass;
 }

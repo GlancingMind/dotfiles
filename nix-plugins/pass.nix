@@ -20,6 +20,13 @@ let
     then "$XDG_DATA_HOME/password-store"
     else builtins.getEnv "PASSWORD_STORE_DIR";
 
+  files = inStorePath: let
+    fileset = builtins.readDir "${pwStorePath}/${inStorePath}";
+    files = attrsets.filterAttrs (n: v: v != "directory") fileset;
+    filenames = builtins.attrNames fileset;
+  in
+    map (strings.removeSuffix ".gpg") filenames;
+
   raw = file: exec [pass pwStorePath file];
 
   lines = file: let
@@ -34,14 +41,18 @@ let
     interleavedMatches = map (builtins.match pattern) (lines file);
     preciseMatches = lists.remove null interleavedMatches;
   in lists.flatten preciseMatches;
+
+  lookupFirst = pattern: file: builtins.head (lookup pattern file);
 in {
   pass = {
     inherit pwStorePath;
+    inherit files;
     decrypt = {
       inherit raw;
       inherit line;
       inherit lines;
       inherit lookup;
+      inherit lookupFirst;
     };
   };
 }
