@@ -10,7 +10,7 @@ home: user/home.nix
 	nix-shell --run "home-manager $(USE_NIX_PLUGINS) -f $? switch"
 
 switch: machine/laptop/configuration.nix
-	nixos-rebuild -I nixos-config=$? switch
+	nix-shell --run "nixos-rebuild -I nixos-config=$? switch"
 
 #TODO backup will be always run, or not overriden even when file changed
 # should only copy files, which have changed.

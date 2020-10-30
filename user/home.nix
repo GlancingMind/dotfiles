@@ -1,5 +1,6 @@
 { config, pkgs, ... }:
 {
+  nixpkgs.config.allowBroken=true;
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
@@ -27,6 +28,9 @@
       };
     };
   };
+
+  home.homeDirectory ="/home/sascha";
+  home.username = "$USER";
 
   home.packages = with pkgs; [
     htop unzip dash
