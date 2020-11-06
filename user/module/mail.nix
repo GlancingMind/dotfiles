@@ -10,6 +10,15 @@ let
     login = "login: +(.*)";
   };
 
+  #NOTE home-manager uses the following command as command for "bash -c".
+  # That's the reason, why $2 is escaped with a '\\', otherwise "bash -c"
+  # will interpret it as an argument reference. As this reference isn't
+  # initilized, awk's command will evaluate to {print }. Leading into printing
+  # of the whole piped line instead of the specified coloumn and hence a wrong
+  # password.
+  mailAppPasswordOf = account:
+    "pass show ${inStorePath account} | awk '/app-password:/ {print \\$2}'";
+
   expandConfig = domain: config: let
     accs = builtins.filter (hasSuffix domain) (pass.files "personal/email");
     configs = map (acc: attrsets.nameValuePair acc (config acc)) accs;
@@ -19,7 +28,7 @@ let
     config = account: rec {
       primary = "92747cf9026d18d1d133fcde0b64a2904c1ec1f0" == builtins.hashString "sha1" address;
       address = pass.decrypt.lookupFirst schema.email (inStorePath account);
-      userName = address;
+      userName = pass.decrypt.lookupFirst schema.login (inStorePath account);
       realName = "";
       passwordCommand= "pass show ${inStorePath account}";
 
@@ -43,6 +52,7 @@ let
         host = "smtp.web.de";
         port = 587;
         tls.enable = true;
+        tls.useStartTls = true;
       };
 
       mbsync = {
@@ -58,7 +68,7 @@ let
     config = account: rec {
       address = pass.decrypt.lookupFirst schema.email (inStorePath account);
       userName = address;
-      passwordCommand= "pass show ${inStorePath account} | awk '/app-password:/ {print $2}'";
+      passwordCommand= mailAppPasswordOf account;
 
       folders = {
         inbox = "INBOX";
@@ -80,6 +90,7 @@ let
         host = "smtp.office365.com";
         port = 587;
         tls.enable = true;
+        tls.useStartTls = true;
       };
 
       mbsync = {
@@ -96,7 +107,7 @@ let
       address = pass.decrypt.lookupFirst schema.email (inStorePath account);
       userName = address;
       realName = "";
-      passwordCommand= "pass show ${inStorePath account} | awk '/app-password:/ {print $2}'";
+      passwordCommand= mailAppPasswordOf account;
 
       folders = {
         inbox = "INBOX";
@@ -118,6 +129,7 @@ let
         host = "smtp.mail.yahoo.com";
         port = 587;
         tls.enable = true;
+        tls.useStartTls = true;
       };
 
       mbsync = {
@@ -156,6 +168,7 @@ let
         host = "mailgate.thm.de";
         port = 587;
         tls.enable = true;
+        tls.useStartTls = true;
       };
 
       mbsync = {
