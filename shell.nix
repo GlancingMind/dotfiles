@@ -9,7 +9,6 @@ in pkgs.stdenv.mkDerivation {
   buildInputs = [
     pkgs.niv
     (import sources.home-manager {inherit pkgs;}).home-manager
-    pkgs.nixops
     pkgs.gnumake
   ];
 
