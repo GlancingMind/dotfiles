@@ -1,6 +1,5 @@
 { config, pkgs, ... }:
 {
-  nixpkgs.config.allowBroken=true;
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 
@@ -40,7 +39,7 @@
     #vis dvtm abduco #as Vim and Tmux alternative
     zathura
     chromium
-    #vscodium
+    vscodium
     #vscode
   ];
 
