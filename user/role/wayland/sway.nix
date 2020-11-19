@@ -42,7 +42,7 @@ in
     config = {
       modifier = "Mod4";
       terminal = "${pkgs.alacritty}/bin/alacritty";
-      menu = "BEMENU_BACKEND=wayland ${pkgs.bemenu}/bin/bemenu-run -i";
+      menu = "BEMENU_BACKEND=wayland ${pkgs.bemenu}/bin/bemenu-run -m 1 -i";
       input = {
         "*" = {
           xkb_layout = "de";
