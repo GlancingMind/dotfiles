@@ -1,0 +1,125 @@
+set nocompatible
+
+" =====================
+" local Plugins
+
+set runtimepath+=~/workspace/personal/vim-configer
+
+" =====================
+" General Settings
+
+set encoding=utf8
+
+"search down into subfolders
+"enables tab-completion for file search via :find
+set path+=**
+
+"enables completion window
+set wildmenu
+
+"show list of completions and complete to longest common substring
+set wildmode=longest:full,full
+
+"set completion popup menu
+set completeopt=preview,longest,menuone
+
+"show typed commands in bottom right corner
+set showcmd
+
+"some settigns come from http://nvie.com/posts/how-i-boosted-my-vim/
+set nowrap
+set expandtab
+set tabstop=4   "tab = 4 spaces
+set backspace=indent,eol,start  "allow backspace over everthing in insert mode
+set autoindent
+set copyindent "copy the prevous indation on autoindenting
+set number "activate row number
+set shiftwidth=4    "number of spaces to use for autoindenting
+set shiftround
+set showmatch
+set ignorecase  "ignore case when searching
+set smartindent
+set smartcase   "ignore case if search pattern is all lowercase, otherwise case sensitive
+set smarttab    "insert tabs on the start of a line according to shiftwidth, not tabstop
+set nohlsearch  "don't highlight search terms
+set incsearch   "show search matches as you type
+set history=1000    "expand command and search history
+set undolevels=1000 "expand undo levels
+set novisualbell
+set noerrorbells
+set nobackup
+set hidden      "prevent the need of saving before editing of a new file with :e"
+
+"use highlight search while searching but turn it of afterwards
+augroup toggle-search-highlight
+    autocmd!
+    autocmd CmdlineEnter /,\? :set hlsearch
+    autocmd CmdlineLeave /,\? :set nohlsearch
+augroup END
+
+"let vim load plugins only if they work for the specific
+"filetype e.g. html, cpp
+filetype plugin indent on
+
+"These are to cancel the default behavior of d, D, c, C
+"to put the text they delete in the default register.
+"Note that this means e.g. "ad won't copy the text into
+"register a anymore.  You have to explicitly yank it.
+nnoremap d "_d
+vnoremap d "_d
+nnoremap D "_D
+vnoremap D "_D
+nnoremap c "_c
+vnoremap c "_c
+nnoremap C "_C
+vnoremap C "_C
+
+let mapleader=","
+
+"open .vimrc in buffer for instante editing
+command! VimrcEdit edit $MYVIMRC
+nnoremap <silent> <leader>erc :VimrcEdit<CR>
+"reload .vimrc for instance settings change
+command! VimrcReload source $MYVIMRC
+nnoremap <silent> <leader>rrc :VimrcReload<CR>
+"save and source current file (for Plugin development)
+nnoremap    <leader>rp  :w<CR>:source %<CR>
+
+"switch . with : to save <shift> key while using
+"cmdline-mode
+nnoremap    .   :
+nnoremap    :   .
+
+"remape CTRL-L key in insert mode to ESC key by considering popupmenu
+inoremap <expr> <C-L> (pumvisible() <bar><bar> &insertmode) ? '<C-L>' : '<Esc>'
+
+"toggle paste option on and off to prevent pasted text formating
+set         pastetoggle=<F11>
+
+"show list of open buffers to open them
+nnoremap    <c-p>       :ls<CR>:b<space>
+
+"expand directory path of current file by hitting %%
+cnoremap %% <C-R>=fnameescape(expand('%:h')).'/'<cr>
+map <leader>es :sp %%
+map <leader>ev :vsp %%
+
+"""Customize Appearance
+"set terminal color support to 256 bit
+set t_Co=256
+set termguicolors " Enable true color support.
+silent! colorscheme gruvbox
+set background=light
+
+"highlight coloumn and cursorline
+set cursorline
+set cursorcolumn
+
+"set visual printline/mark on coloumn 80
+set cc=80
+
+"enable syntax highlighting
+syntax on
+
+"display status line always
+set laststatus=2
