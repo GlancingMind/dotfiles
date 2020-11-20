@@ -42,8 +42,10 @@
     vscodium
   ];
 
-#  programs.git.enable = true;
-#  programs.git.package = pkgs.gitAndTools.gitFull;
+  programs.git = {
+    enable = true;
+    package = pkgs.gitAndTools.gitFull;
+  };
 
   # See all available envs here: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html
   #   - Setting of Browser and TERM is done by the respective "desktop" environment as wayland requires diffrent browser/terminal as x11
