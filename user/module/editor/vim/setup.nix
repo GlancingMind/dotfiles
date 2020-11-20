@@ -1,12 +1,12 @@
 { pkgs ? import <nixpkgs> {}, ...}:
 
-#NOTE allowing a path for plugin config isn't consistent to extraConfig options
-#TODO allow to set dependencies to system binaries or other packages
 #TODO sort optional plugins, as they must be set in optional
 #TODO the config of a optional loaded vim plugin should be only loaded on
 # plugin load. E.g. load purescript-vim and it's config only on purescript
 # files and don't concat it's config in the "global" vimrc.
+#TODO allow to set dependencies to system binaries or other packages
 #TODO create useXDGSpecification option in vim module, to store configs
+#NOTE allowing a path for plugin config isn't consistent to extraConfig options
 
 let
   nivTrackedPluginSources = import ./nix/sources.nix {};
@@ -17,37 +17,64 @@ let
       enable = true;
       source = nivTrackedPluginSources.vim-baker;
       config = ./config/baker.vim;
+      loadOn = {};
     }
-    { source = nivTrackedPluginSources.vim-erlang-omnicomplete; }
-    { source = nivTrackedPluginSources.vim-erlang-runtime; }
-    { source = nivTrackedPluginSources.vim-fugitive; }
-    { source = nivTrackedPluginSources.vim-surround; }
     { source = nivTrackedPluginSources.gruvbox; }
-    { source = nivTrackedPluginSources.vimwiki; }
-    { source = nivTrackedPluginSources."literate.vim"; }
-    { source = nivTrackedPluginSources.hardmode; }
     { source = nivTrackedPluginSources.vim-editorconfig; }
-    { source = nivTrackedPluginSources.emmet-vim; }
-    { source = nivTrackedPluginSources.Ada-Bundle; }
-    { source = nivTrackedPluginSources.vim-nix; }
-    { source = nivTrackedPluginSources.psc-ide-vim; }
-    { source = nivTrackedPluginSources.purescript-vim; }
-    { source = nivTrackedPluginSources.vim-reason-plus; }
-    { sources = [
-        nivTrackedPluginSources.vim-lsp
-        nivTrackedPluginSources."asyncomplete.vim"
-        nivTrackedPluginSources."asyncomplete-lsp.vim"
-      ];
+    {
+      source = nivTrackedPluginSources.vim-nix;
+      loadOn = {
+        filetypeRegEx = "FT";
+        filenameRegEx = "FN";
+        tag = "BLUB";
+      };
     }
+    #{ source = nivTrackedPluginSources.vim-fugitive; }
+    #{ source = nivTrackedPluginSources.vim-surround; }
+    #{ source = nivTrackedPluginSources.vimwiki; }
+    #{ source = nivTrackedPluginSources."literate.vim"; }
+    #{ source = nivTrackedPluginSources.hardmode; }
+    #{ source = nivTrackedPluginSources.emmet-vim; }
+    #{ source = nivTrackedPluginSources.vim-erlang-omnicomplete; }
+    #{ source = nivTrackedPluginSources.vim-erlang-runtime; }
+    #{ source = nivTrackedPluginSources.Ada-Bundle; }
+    #{ source = nivTrackedPluginSources.psc-ide-vim; }
+    #{ source = nivTrackedPluginSources.purescript-vim; }
+    #{ source = nivTrackedPluginSources.vim-reason-plus; }
+    #{ sources = [
+    #    nivTrackedPluginSources.vim-lsp
+    #    nivTrackedPluginSources."asyncomplete.vim"
+    #    nivTrackedPluginSources."asyncomplete-lsp.vim"
+    #  ];
+    #}
   ];
 
   isEnabled = plugin: (plugin ? enable) -> plugin.enable;
   enabledPlugins = builtins.filter isEnabled plugins;
+
+  # loadOn = {};
+  #   => Plugin loads either itself or user must use :packadd
+  # loadOn = { filetypeRegEx, filenameRegEx, tag, ...};
+  #   => Embed autocmd in vimrc to load plugin on given options
+  # Unkown options will be ignored.
+  isLoadedOnDemand = builtins.hasAttr "loadOn";
+  onDemandLoadedPlugins = builtins.filter isLoadedOnDemand enabledPlugins;
+  genLoadOnCmdCode = plugin: let
+    genAutoCmds = option: regex:
+      if option == "filetypeRegEx"
+        then "\"load plugin via filetype ${regex}"
+      else if option == "filenameRegEx"
+        then "\"load plugin via filename ${regex}"
+      else if option == "tag"
+        then "\"load plugin via tag ${regex}"
+      else "";
+  in builtins.concatStringsSep "\n"
+    (pkgs.lib.attrsets.mapAttrsToList genAutoCmds plugin.loadOn);
+
   hasConfig = plugin: (plugin ? config);
   getConfig = plugin: if builtins.isPath plugin.config
     then builtins.readFile plugin.config
     else plugin.config;
-  isEnabledAndHasConfig = plugin: (isEnabled plugin) -> (hasConfig plugin);
 
   # Represents the whole configuration of every enabled plugin configuration.
   consolidatePluginConfig = let
@@ -82,12 +109,18 @@ let
     converted = map convert sources;
   in pkgs.lib.flatten converted;
 
-  vim = pkgs.vim_configurable.customize {
+  vim = let
+    onDemandCode = builtins.toString (map genLoadOnCmdCode onDemandLoadedPlugins);
+    customRC = config + consolidatePluginConfig + onDemandCode;
+  in pkgs.vim_configurable.customize {
     name = "custom-vim";
-    vimrcConfig.customRC = config + consolidatePluginConfig;
-    vimrcConfig.packages.home-manager.start = convertedPlugins enabledPlugins;
+    vimrcConfig = {
+      inherit customRC;
+      packages.home-manager.start = convertedPlugins enabledPlugins;
+      packages.home-manager.opt = convertedPlugins onDemandLoadedPlugins;
+      #TODO check if lsp has it's own plugin directory
+    };
   };
 in {
-  #plugins = convertedPlugins enabledPlugins;
   home.packages = [ vim ];
 }
