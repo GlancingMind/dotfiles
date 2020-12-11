@@ -9,6 +9,9 @@ USE_NIX_PLUGINS = --option extra-builtins-file $(PWD)/nix-plugins/pass.nix
 home: user/home.nix
 	nix-shell --run "home-manager $(USE_NIX_PLUGINS) -f $? switch"
 
+debug_home: user/home.nix
+	nix-shell --run "home-manager $(USE_NIX_PLUGINS) --show-trace -f $? switch"
+
 repl:
 	nix repl $(USE_NIX_PLUGINS)
 
