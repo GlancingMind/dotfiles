@@ -40,7 +40,6 @@
     zathura
     chromium
     vscodium
-    #vscode
   ];
 
 #  programs.git.enable = true;
