@@ -32,7 +32,7 @@
   home.username = "$USER";
 
   home.packages = with pkgs; [
-    htop unzip dash
+    htop unzip unrar dash
     xdg_utils
     #gitAndTools.git-bug
     libvirt vagrant docker-compose
