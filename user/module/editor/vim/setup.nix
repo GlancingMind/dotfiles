@@ -38,14 +38,27 @@ let
       plugins = [nivTrackedPluginSources.vim-baker];
     }
     nivTrackedPluginSources.gruvbox
-    nivTrackedPluginSources.vim-editorconfig
-    #nivTrackedPluginSources.vim-nix
-    #nivTrackedPluginSources.vim-fugitive
-    #nivTrackedPluginSources.vim-surround
-    #nivTrackedPluginSources.vimwiki
+    {
+      name = "editorconfig";
+      plugins = [nivTrackedPluginSources.vim-editorconfig];
+      config = builtins.readFile ./config/editorconfig.vim;
+    }
+    nivTrackedPluginSources.vim-nix
+    nivTrackedPluginSources.vim-fugitive
+    nivTrackedPluginSources.vim-surround
+    {
+      name = "vimwiki";
+      plugins = [nivTrackedPluginSources.vimwiki];
+      config = builtins.readFile ./config/vimwiki.vim;
+    }
     #nivTrackedPluginSources."literate.vim"
-    #nivTrackedPluginSources.hardmode
-    #nivTrackedPluginSources.emmet-vim
+    {
+      name = "hardmode";
+      plugins = [nivTrackedPluginSources.hardmode];
+      config = builtins.readFile ./config/hardmode.vim;
+      optional = {};
+    }
+    nivTrackedPluginSources.emmet-vim
     #nivTrackedPluginSources.vim-erlang-omnicomplete
     #nivTrackedPluginSources.vim-erlang-runtime
     #nivTrackedPluginSources.Ada-Bundle
@@ -54,6 +67,7 @@ let
     #nivTrackedPluginSources.vim-reason-plus
     {
       name = "LSP";
+      config = builtins.readFile ./config/lsp.vim;
       plugins = [
         nivTrackedPluginSources.vim-lsp
         nivTrackedPluginSources."asyncomplete.vim"
@@ -68,12 +82,7 @@ let
         };
       };
     }
-    {
-      name = "TEST";
-      plugins = [pkgs.vimPlugins.vimwiki];
-      optional.groupPluginsUnderName = true;
-    }
-    #pkgs.vimPlugins.fzf-vim
+    pkgs.vimPlugins.fzf-vim
   ];
 
   package = plugin: let
