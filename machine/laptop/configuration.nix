@@ -43,6 +43,9 @@
   boot.loader.systemd-boot.editor = false;
   boot.loader.timeout = 0;
 
+  # Enable NTFS-3G to allow mounting of ntfs formatted usb stick.
+  boot.supportedFilesystems = ["ntfs"];
+
   fonts.enableDefaultFonts = true;
 
   # Select internationalisation properties.
