@@ -30,6 +30,7 @@ set nocompatible
 " local Plugins
 
 set runtimepath+=~/workspace/personal/vim-configer
+set runtimepath+=~/workspace/personal/notmuch-vim
 
 " =====================
 " Plugins
