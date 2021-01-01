@@ -29,6 +29,12 @@
     plugin-files = ${pkgs.nix-plugins}/lib/nix/plugins/libnix-extra-builtins.so
   '';
 
+  services.udev.packages = [
+    #enable mounting of android devices as unprivileged users without globaly
+    #running adb. See https://nixos.wiki/wiki/Android
+    pkgs.android-udev-rules
+  ];
+
   networking.firewall.allowedTCPPorts = [ 22 ];
   services.openssh.enable = true;
 
